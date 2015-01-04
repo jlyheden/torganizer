@@ -11,6 +11,7 @@ setup(
     license="BSD",
     packages=['torganizer', 'tests'],
     test_suite="tests",
+    install_requires=['mutagen'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
