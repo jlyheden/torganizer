@@ -16,3 +16,4 @@ class TestTorganizerUtils(unittest.TestCase):
         self.assertEqual("test string", sanitize_string("_test_string_"))
         self.assertEqual("Test String", sanitize_string("_test_string_", title=True))
         self.assertEqual("Test String", sanitize_string("___TEST_STRING_", title=True))
+        self.assertEqual("Test-String", sanitize_string("Test/String"))

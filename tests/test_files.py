@@ -67,3 +67,14 @@ class TestTorganizerSoundFileGeneric(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.testdir)
+
+
+class TestTorganizerSoundFileMP3(unittest.TestCase):
+
+    def test_sample_mp3(self):
+        o = SoundFileMP3('tests/resources/sample.mp3')
+        self.assertEqual('01', o.track_number)
+        self.assertEqual('440Hz Sine Wave', o.title_name)
+        self.assertEqual('Artist Name', o.artist_name)
+        self.assertEqual('Album Name', o.album_name)
+        self.assertEqual('01 - 440Hz Sine Wave.mp3', str(o))

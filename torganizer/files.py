@@ -21,7 +21,7 @@ def soundfile_factory(f):
         '.mp3': SoundFileMP3
     }
     try:
-        ext = os.path.splitext(f)[1]
+        ext = os.path.splitext(f)[1].lower()
         return formats[ext]
     except KeyError:
         logger.warning("No factory for file type %s, falling back on generic" % f)
@@ -113,19 +113,20 @@ class SoundFileMP3(SoundFile):
         from mutagen.easyid3 import EasyID3
         self.id3 = EasyID3(self.filename_path)
         try:
-            self.artist_name = self.id3['artist']
+            self.artist_name = self.id3['artist'][0]
         except KeyError:
             logger.warning("No artist name metadata found for %s" % self.filename)
         try:
-            self.album_name = self.id3['album']
+            self.album_name = self.id3['album'][0]
         except KeyError:
             logger.warning("No album name metadata found for %s" % self.filename)
         try:
-            self.title_name = self.id3['title']
+            self.title_name = self.id3['title'][0]
         except KeyError:
             logger.warning("No title metadata found for %s" % self.filename)
         try:
-            self.track_number = self.id3['tracknumber']
+            self.track_number = self.id3['tracknumber'][0]
+            self.track_number = self.sanitize_tracknumber(self.track_number)
         except KeyError:
             logger.warning("No track number metadata found for %s" % self.filename)
 

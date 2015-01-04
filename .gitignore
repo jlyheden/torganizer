@@ -2,3 +2,6 @@
 *.swp
 .idea/
 *.egg-info/
+build/
+dist/
+tests/resources/testdir/
