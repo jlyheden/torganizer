@@ -1,8 +1,6 @@
 # -*- coding: UTF-8 -*-
 __author__ = 'johan'
 
-import re
-
 SQUASH_MAP = {
     u"å": "a",
     u"ä": "a",
@@ -41,7 +39,8 @@ def sanitize_string(s, title=False):
     :return: sanitized string
     :rtype: str
     """
-    rs = re.sub("_", " ", s).lstrip().rstrip()
+    rs = s.replace("_", " ").lstrip().rstrip()
+    rs = rs.replace("/", "-")
     if title:
         return rs.title()
     else:

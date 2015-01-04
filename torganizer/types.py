@@ -36,9 +36,11 @@ class BaseType(object):
                 self.files_action[f] = action_factory(f)
 
     def copy_to_dst(self):
-        os.makedirs(self.dst_path_full, exist_ok=True)
+        if not os.path.exists(self.dst_path_full):
+            logger.info("Destination directory '%s' does not exist. Creating it" % self.dst_path_full)
+            os.makedirs(self.dst_path_full)
         for x in os.listdir(self.tmp_path_full):
-            shutil.copy(x, self.dst_path_full)
+            shutil.copy(os.path.join(self.tmp_path_full, x), self.dst_path_full)
 
     def copy_to_tmp(self):
         if os.path.exists(self.tmp_path_full):
@@ -61,8 +63,11 @@ class BaseType(object):
 
     @staticmethod
     def rename_file(src, dst):
-        logger.debug("Renaming file '%s' to '%s'" % (src, dst))
-        os.rename(src, dst)
+        if src == dst:
+            logger.debug("Not renaming file '%s' to '%s', destination is identical to source" % (src, dst))
+        else:
+            logger.debug("Renaming file '%s' to '%s'" % (src, dst))
+            os.rename(src, dst)
 
 
 class MusicType(BaseType):
@@ -118,4 +123,4 @@ class MusicType(BaseType):
             self.artist_name = Counter(artist_names).most_common()[0][0]
         self.artist_name = unicode_squash(self.artist_name)
         self.album_name = unicode_squash(self.album_name)
-        self.tmp_path_full = os.path.join(self.dst_path, self.artist_name, self.album_name)
+        self.dst_path_full = os.path.join(self.dst_path, self.artist_name, self.album_name)

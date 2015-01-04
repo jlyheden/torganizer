@@ -99,8 +99,8 @@ class SoundFile(object):
         :return:
         """
         # This should be configurable
-        return "%s - %s%s" % (self.sanitize_tracknumber(self.track_number), unicode_squash(self.title_name),
-                              self.extension)
+        return sanitize_string("%s - %s%s" % (self.sanitize_tracknumber(self.track_number),
+                                              unicode_squash(self.title_name), self.extension))
 
 
 class SoundFileMP3(SoundFile):
