@@ -1,0 +1,17 @@
+---
+loglevel: debug
+logoutput: stdout
+tmp_path: /tmp/tmp
+handlers:
+    music:
+        src: /tmp/src/music
+        dst: /tmp/dst/music
+        handler: MusicHandler
+    series:
+        src: /tmp/src/series
+        dst: /tmp/dst/series
+        handler: SeriesHandler
+    movie:
+        src: /tmp/src/movies
+        dst: /tmp/dst/movies
+        handler: MovieHandler

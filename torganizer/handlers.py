@@ -11,7 +11,7 @@ from collections import Counter
 logger = logging.getLogger(__name__)
 
 
-class BaseType(object):
+class BaseHandler(object):
     """
     Inherit from the BaseType
     """
@@ -56,7 +56,8 @@ class BaseType(object):
         pass
 
     def post_process_dst(self):
-        pass
+        logger.info("Purging tmp directory '%s'" % self.tmp_path_full)
+        shutil.rmtree(self.tmp_path_full)
 
     def full_path_to_dst(self):
         pass
@@ -69,14 +70,20 @@ class BaseType(object):
             logger.debug("Renaming file '%s' to '%s'" % (src, dst))
             os.rename(src, dst)
 
+    def execute(self):
+        self.copy_to_tmp()
+        self.post_process_tmp()
+        self.copy_to_dst()
+        self.post_process_dst()
 
-class MusicType(BaseType):
+
+class MusicHandler(BaseHandler):
 
     file_types = ['.mp3']
     file_types_ignore = ['.nfo']
 
     def __init__(self, src_path, dst_path, tmp_path, parse_metadata=False):
-        super(MusicType, self).__init__(src_path=src_path, dst_path=dst_path, tmp_path=tmp_path)
+        super(MusicHandler, self).__init__(src_path=src_path, dst_path=dst_path, tmp_path=tmp_path)
         self.parse_metadata = parse_metadata
         self.album_name = self.get_album_name_from_path()
         self.artist_name = self.get_artist_name_from_path()
@@ -121,6 +128,4 @@ class MusicType(BaseType):
             self.album_name = Counter(album_names).most_common()[0][0]
         if len(artist_names) > 0:
             self.artist_name = Counter(artist_names).most_common()[0][0]
-        self.artist_name = unicode_squash(self.artist_name)
-        self.album_name = unicode_squash(self.album_name)
-        self.dst_path_full = os.path.join(self.dst_path, self.artist_name, self.album_name)
+        self.dst_path_full = unicode_squash(os.path.join(self.dst_path, self.artist_name, self.album_name))
