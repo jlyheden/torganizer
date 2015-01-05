@@ -1,9 +1,10 @@
 __author__ = 'johan'
 
 import os
+import shutil
 import re
 import logging
-from torganizer.utils import sanitize_string, occurrence_in_string, unicode_squash
+from torganizer.utils import sanitize_string, occurrence_in_string, unicode_squash, lastfm_apicall
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class SoundFile(object):
     Base SoundFile class, use SoundFileGeneric class if you don't
     want to utilize any metadata analytics
     """
-    def __init__(self, filename):
+    def __init__(self, filename, lastfm_apikey=None):
         self.filename_path = filename
         self.filename = os.path.basename(filename)
         self.filename_wext, self.extension = os.path.splitext(self.filename)
@@ -42,6 +43,7 @@ class SoundFile(object):
         self.track_number = None
         self.title_name = None
         self.disc_number = ''
+        self.lastfm_apikey = lastfm_apikey
         self.parse_filename()
 
     def parse_filename(self):
@@ -100,6 +102,44 @@ class SoundFile(object):
     def sanitize_discnumber(n):
         return n.split("/")[0]
 
+    def parse_lastfm_data(self):
+        etree = lastfm_apicall(self.lastfm_apikey, method='track.getInfo', artist=self.artist_name,
+                               track=self.title_name)
+        track = etree.find('track')
+        title = None
+        artist = None
+        track_number = None
+        album = None
+
+        try:
+            title = track.find('name').text
+        except AttributeError:
+            logger.warning("Could not find 'name' tag from LastFM")
+        else:
+            logger.debug("Found title data '%s' from LastFM" % title)
+            self.title_name = title
+
+        try:
+            artist = track.find('artist').find('name').text
+        except AttributeError:
+            logger.warning("Could not find 'artist'/'name' tag from LastFM")
+
+        try:
+            track_number = track.find('album').attrib['position']
+        except AttributeError:
+            logger.warning("Could not find 'position' attribute from LastFM")
+        else:
+            logger.debug("Found track data '%s' from LastFM" % track_number)
+            self.track_number = track_number
+
+        try:
+            album = track.find('album').find('title').text
+        except AttributeError:
+            logger.warning("Could not find 'album'/'title' tag from LastFM")
+        else:
+            logger.debug("Found album data '%s' from LastFM" % album)
+            self.album_name = album
+
     def __str__(self):
         """
         Returns the calculated file name
@@ -111,6 +151,19 @@ class SoundFile(object):
         # This should be configurable
         return sanitize_string("%s%s - %s%s" % (self.disc_number, self.sanitize_tracknumber(self.track_number),
                                                 unicode_squash(self.title_name), self.extension))
+
+    def persist(self):
+        """
+        Implementation specific, override in sub classes
+        """
+        pass
+
+    def copy(self, dst):
+        dst_full = unicode_squash(os.path.join(dst, self.artist_name, self.album_name))
+        if not os.path.exists(dst_full):
+            logger.info("Destination directory '%s' does not exist. Creating it" % dst_full)
+            os.makedirs(dst_full)
+        shutil.copy(self.filename_path, dst_full)
 
 
 class SoundFileMP3(SoundFile):
@@ -149,6 +202,19 @@ class SoundFileMP3(SoundFile):
             logger.debug("Found disc number '%s' from ID3 tag in file '%s'" % (self.disc_number, self.filename))
         except KeyError:
             logger.warning("No disc number metadata found for %s" % self.filename)
+
+    def persist(self):
+        self.id3['artist'] = self.artist_name
+        self.id3['album'] = self.album_name
+        self.id3['title'] = self.title_name
+        self.id3['tracknumber'] = self.track_number
+        if self.disc_number:
+            self.id3['discnumber'] = self.disc_number
+        self.id3.save()
+        new_path = os.path.join(os.path.dirname(self.filename_path), str(self))
+        logger.debug("Renaming file '%s' to '%s'" % (self.filename_path, new_path))
+        os.rename(self.filename_path, new_path)
+        self.filename_path = new_path
 
 
 class SoundFileGeneric(SoundFile):

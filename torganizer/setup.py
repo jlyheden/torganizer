@@ -23,8 +23,7 @@ def setup(config, path):
     handlers = {
         'MusicHandler': MusicHandler
     }
-    dirname = os.path.dirname(path)
     for handler in config['handlers'].values():
-        if handler['src'] == dirname:
+        if path.startswith(handler['scan_path']):
             klass = handlers[handler['handler']]
-            return klass(path, handler['dst'], config['tmp_path'])
+            return klass(src_path=path, **handler)

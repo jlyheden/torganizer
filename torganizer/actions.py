@@ -24,6 +24,10 @@ def action_factory(f):
 
 class BaseAction(object):
 
+    def __init__(self, src, dst):
+        self.src = src
+        self.dst = dst
+
     @staticmethod
     def run_cmd(cmd, *args):
         p_list = [cmd] + list(args)
@@ -37,32 +41,35 @@ class BaseAction(object):
 
 class CopyAction(BaseAction):
 
-    @staticmethod
-    def do(src_path, dst_path):
-        logger.debug("Copying file %s to %s" % (src_path, dst_path))
-        shutil.copy(src_path, dst_path)
+    def do(self):
+        logger.debug("Copying file %s to %s" % (self.src, self.dst))
+        if not os.path.exists(self.dst):
+            logger.info("Destination path %s does not exist. Creating it" % self.dst)
+            os.makedirs(self.dst)
+        shutil.copy(self.src, self.dst)
 
 
 class DummyCopyAction(BaseAction):
 
-    @staticmethod
-    def do(src_path, dst_path):
-        logger.debug("Dummy logger for file %s" % src_path)
+    def do(self):
+        logger.debug("Dummy logger for file %s" % self.src)
 
 
 class UnrarAction(BaseAction):
 
-    def __init__(self):
+    def __init__(self, src, dst):
+        super(UnrarAction, self).__init__(src, dst)
         self.run_cmd('unrar', '--help')
 
-    def do(self, src_path, dst_path):
-        self.run_cmd('unrar', '-x', src_path, dst_path)
+    def do(self):
+        self.run_cmd('unrar', '-x', self.src, self.dst)
 
 
 class UnzipAction(BaseAction):
 
-    def __init__(self):
+    def __init__(self, src, dst):
+        super(UnzipAction, self).__init__(src, dst)
         self.run_cmd('unzip', '-h')
 
-    def do(self, src_path, dst_path):
-        self.run_cmd('unzip', src_path, '-d', dst_path)
+    def do(self):
+        self.run_cmd('unzip', self.src, '-d', self.dst)

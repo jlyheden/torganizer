@@ -1,6 +1,13 @@
 # -*- coding: UTF-8 -*-
 __author__ = 'johan'
 
+from urllib import urlencode
+import urllib2
+import xml.etree.ElementTree as ET
+import logging
+
+logger = logging.getLogger(__name__)
+
 SQUASH_MAP = {
     u"å": "a",
     u"ä": "a",
@@ -59,3 +66,23 @@ def occurrence_in_string(c, s):
     :rtype: int
     """
     return len([x for x in s if x == c])
+
+
+def lastfm_apicall(api_key, **kwargs):
+    """
+
+    :param api_key: lastfm api key
+    :param kwargs: key/value query params
+    :type api_key: str
+    :type kwargs: dict
+    :return: xml response
+    :rtype: xml.etree.ElementTree
+    """
+    params = kwargs.copy()
+    params['api_key'] = api_key
+    url = "http://ws.audioscrobbler.com/2.0/?%s" % urlencode(params)
+    logger.debug("Preparing LastFM api call: '%s'" % url)
+    request = urllib2.Request(url)
+    request.add_header('Accept', 'application/xml')
+    response = urllib2.urlopen(request)
+    return ET.fromstring(response.read())

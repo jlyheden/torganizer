@@ -5,8 +5,7 @@ import shutil
 import logging
 from torganizer.actions import action_factory
 from torganizer.files import soundfile_factory
-from torganizer.utils import sanitize_string, unicode_squash
-from collections import Counter
+from torganizer.utils import sanitize_string
 
 logger = logging.getLogger(__name__)
 
@@ -20,40 +19,27 @@ class BaseHandler(object):
     file_types = []
     file_types_ignore = []
 
-    def __init__(self, src_path, dst_path, tmp_path):
-        self.src_path = src_path
-        self.dst_path = dst_path
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
         self.dst_path_full = None
-        self.tmp_path = tmp_path
-        self.tmp_path_full = os.path.join(tmp_path, os.path.basename(src_path))
+        self.tmp_path_full = os.path.join(self.tmp_path, os.path.basename(self.src_path))
         self.files_action = {}
-        self.analyze_files()
+        self.files_process = {}
 
     def analyze_files(self):
-        for f in os.listdir(self.src_path):
-            logger.debug("Analyzing file %s" % f)
-            ending = os.path.splitext(f)[1].lower()
-            if ending not in self.file_types_ignore:
-                action = action_factory(f)
-                logger.debug("Assigning action %s to file %s" % (action.__name__, f))
-                self.files_action[f] = action
+        pass
 
     def copy_to_dst(self):
-        if not os.path.exists(self.dst_path_full):
-            logger.info("Destination directory '%s' does not exist. Creating it" % self.dst_path_full)
-            os.makedirs(self.dst_path_full)
-        for x in os.listdir(self.tmp_path_full):
-            shutil.copy(os.path.join(self.tmp_path_full, x), self.dst_path_full)
+        for value in self.files_process.values():
+            value.copy(self.dst_path)
 
     def copy_to_tmp(self):
         if os.path.exists(self.tmp_path_full):
             shutil.rmtree(self.tmp_path_full)
-        os.mkdir(self.tmp_path_full)
-        for fn, action in self.files_action.items():
-            src = os.path.join(self.src_path, fn)
-            dst = os.path.join(self.tmp_path_full, fn)
-            # could thread this
-            action().do(src, dst)
+        os.makedirs(self.tmp_path_full)
+        for action in self.files_action.values():
+            action.do()
 
     def post_process_tmp(self):
         pass
@@ -74,10 +60,14 @@ class BaseHandler(object):
             os.rename(src, dst)
 
     def execute(self):
+        self.analyze_files()
         self.copy_to_tmp()
         self.post_process_tmp()
         self.copy_to_dst()
         self.post_process_dst()
+
+    def is_copied(self, f):
+        return os.path.splitext(f)[1] not in self.file_types_ignore
 
 
 class MusicHandler(BaseHandler):
@@ -85,28 +75,27 @@ class MusicHandler(BaseHandler):
     file_types = ['.mp3']
     file_types_ignore = ['.nfo', '.cue', '.log', '.m3u']
 
-    def __init__(self, src_path, dst_path, tmp_path, parse_metadata=False):
-        super(MusicHandler, self).__init__(src_path=src_path, dst_path=dst_path, tmp_path=tmp_path)
-        self.parse_metadata = parse_metadata
-        self.album_name = self.get_album_name_from_path()
-        self.artist_name = self.get_artist_name_from_path()
+    def is_handled(self, f):
+        return os.path.splitext(f)[1].lower() in self.file_types
 
-    def get_album_name_from_path(self):
-        bn = os.path.basename(self.src_path)
-        return sanitize_string("-".join(bn.split('-')[1:])).title()
+    def analyze_files(self):
+        """
+        We probably need to handle each type of media differently
+        For example, music we want to retain sub folders for multi CD albums so that
+        this folder metadata is preserved.
 
-    def get_artist_name_from_path(self):
-        bn = os.path.basename(self.src_path)
-        return sanitize_string("-".join(bn.split('-')[:1])).title()
-
-    def full_path_to_dst(self):
-        return os.path.join(self.dst_path, self.artist_name, self.album_name)
-
-    def is_compilation(self):
-        if os.path.basename(self.src_path).lower().startswith('va'):
-            return True
-        else:
-            return False
+        :return:
+        """
+        for walk in os.walk(self.src_path):
+            walk_dir = walk[0]
+            walk_dir_files = walk[2]
+            subfolder = walk_dir.lstrip(self.src_path)
+            for walk_file in walk_dir_files:
+                walk_file_path = os.path.join(walk_dir, walk_file)
+                if self.is_copied(walk_file):
+                    action = action_factory(walk_file)
+                    self.files_action[walk_file_path] = action(src=walk_file_path, dst=os.path.join(self.tmp_path_full,
+                                                                                                    subfolder))
 
     def post_process_tmp(self):
         """
@@ -116,20 +105,17 @@ class MusicHandler(BaseHandler):
 
         :return:
         """
-        album_names = []
-        artist_names = []
-        for f in os.listdir(self.tmp_path_full):
-            ext = os.path.splitext(f)[1]
-            if ext in self.file_types:
-                soundfile_class = soundfile_factory(f)
-                logger.debug("Assigning class %s to parse file %s" % (soundfile_class.__name__, f))
-                soundfile = soundfile_class(os.path.join(self.tmp_path_full, f))
-                if not self.is_compilation():
-                    album_names.append(soundfile.album_name)
-                    artist_names.append(soundfile.artist_name)
-                self.rename_file(soundfile.filename_path, os.path.join(self.tmp_path_full, str(soundfile)))
-        if len(album_names) > 0:
-            self.album_name = Counter(album_names).most_common()[0][0]
-        if len(artist_names) > 0:
-            self.artist_name = Counter(artist_names).most_common()[0][0]
-        self.dst_path_full = unicode_squash(os.path.join(self.dst_path, self.artist_name, self.album_name))
+        for walk in os.walk(self.tmp_path_full):
+            walk_dir = walk[0]
+            walk_dir_files = walk[2]
+            subfolder = walk_dir.lstrip(self.tmp_path_full)
+            for walk_file in walk_dir_files:
+                walk_file_path = os.path.join(walk_dir, walk_file)
+                if self.is_handled(walk_file):
+                    SoundFileFactoryClass = soundfile_factory(walk_file)
+                    soundfile = SoundFileFactoryClass(walk_file_path)
+                    if self.lastfm_apikey:
+                        soundfile.lastfm_apikey = self.lastfm_apikey
+                        soundfile.parse_lastfm_data()
+                    soundfile.persist()
+                    self.files_process[walk_file] = soundfile
