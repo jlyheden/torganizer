@@ -31,9 +31,12 @@ class BaseHandler(object):
 
     def analyze_files(self):
         for f in os.listdir(self.src_path):
+            logger.debug("Analyzing file %s" % f)
             ending = os.path.splitext(f)[1].lower()
             if ending not in self.file_types_ignore:
-                self.files_action[f] = action_factory(f)
+                action = action_factory(f)
+                logger.debug("Assigning action %s to file %s" % (action.__name__, f))
+                self.files_action[f] = action
 
     def copy_to_dst(self):
         if not os.path.exists(self.dst_path_full):
@@ -80,7 +83,7 @@ class BaseHandler(object):
 class MusicHandler(BaseHandler):
 
     file_types = ['.mp3']
-    file_types_ignore = ['.nfo']
+    file_types_ignore = ['.nfo', '.cue', '.log', '.m3u']
 
     def __init__(self, src_path, dst_path, tmp_path, parse_metadata=False):
         super(MusicHandler, self).__init__(src_path=src_path, dst_path=dst_path, tmp_path=tmp_path)
@@ -119,6 +122,7 @@ class MusicHandler(BaseHandler):
             ext = os.path.splitext(f)[1]
             if ext in self.file_types:
                 soundfile_class = soundfile_factory(f)
+                logger.debug("Assigning class %s to parse file %s" % (soundfile_class.__name__, f))
                 soundfile = soundfile_class(os.path.join(self.tmp_path_full, f))
                 if not self.is_compilation():
                     album_names.append(soundfile.album_name)

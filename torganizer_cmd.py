@@ -1,10 +1,7 @@
 __author__ = 'johan'
 
-import logging
 import argparse
-from torganizer.setup import get_config, setup
-
-logger = logging.getLogger(__name__)
+from torganizer.setup import get_config, setup, setup_logging
 
 
 parser = argparse.ArgumentParser(description='Torrent Organizer script')
@@ -13,5 +10,6 @@ parser.add_argument('--src', dest='src', action='store', type=str, help='Source 
 args = parser.parse_args()
 
 config = get_config(args.config_path)
+setup_logging(config)
 handler = setup(config, args.src)
 handler.execute()

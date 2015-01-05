@@ -1,8 +1,6 @@
 # -*- coding: UTF-8 -*-
 __author__ = 'johan'
 
-import yaml
-
 SQUASH_MAP = {
     u"å": "a",
     u"ä": "a",

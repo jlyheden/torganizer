@@ -41,6 +41,7 @@ class SoundFile(object):
         self.album_name = None
         self.track_number = None
         self.title_name = None
+        self.disc_number = ''
         self.parse_filename()
 
     def parse_filename(self):
@@ -50,7 +51,12 @@ class SoundFile(object):
         :return:
         """
         try:
-            self.track_number = re.search(r"^([0-9]+)", self.filename_wext).group()
+            leading_digits = re.search(r"^([0-9]+)", self.filename_wext).group()
+            if len(leading_digits) == 3:
+                self.disc_number = leading_digits[:1]
+                self.track_number = leading_digits[1:]
+            else:
+                self.track_number = leading_digits
         except AttributeError, ex:
             logger.error("Could not parse file name %s, hope it contains any metadata. Exception was" % self.filename,
                          str(ex))
@@ -90,6 +96,10 @@ class SoundFile(object):
     def sanitize_tracknumber(n):
         return "%02d" % int(n.split("/")[0])
 
+    @staticmethod
+    def sanitize_discnumber(n):
+        return n.split("/")[0]
+
     def __str__(self):
         """
         Returns the calculated file name
@@ -99,8 +109,8 @@ class SoundFile(object):
         :return:
         """
         # This should be configurable
-        return sanitize_string("%s - %s%s" % (self.sanitize_tracknumber(self.track_number),
-                                              unicode_squash(self.title_name), self.extension))
+        return sanitize_string("%s%s - %s%s" % (self.disc_number, self.sanitize_tracknumber(self.track_number),
+                                                unicode_squash(self.title_name), self.extension))
 
 
 class SoundFileMP3(SoundFile):
@@ -114,21 +124,31 @@ class SoundFileMP3(SoundFile):
         self.id3 = EasyID3(self.filename_path)
         try:
             self.artist_name = self.id3['artist'][0]
+            logger.debug("Found artist name '%s' from ID3 tag in file '%s'" % (self.artist_name, self.filename))
         except KeyError:
             logger.warning("No artist name metadata found for %s" % self.filename)
         try:
             self.album_name = self.id3['album'][0]
+            logger.debug("Found album name '%s' from ID3 tag in file '%s'" % (self.album_name, self.filename))
         except KeyError:
             logger.warning("No album name metadata found for %s" % self.filename)
         try:
             self.title_name = self.id3['title'][0]
+            logger.debug("Found title name '%s' from ID3 tag in file '%s'" % (self.title_name, self.filename))
         except KeyError:
             logger.warning("No title metadata found for %s" % self.filename)
         try:
             self.track_number = self.id3['tracknumber'][0]
             self.track_number = self.sanitize_tracknumber(self.track_number)
+            logger.debug("Found track number '%s' from ID3 tag in file '%s'" % (self.track_number, self.filename))
         except KeyError:
             logger.warning("No track number metadata found for %s" % self.filename)
+        try:
+            self.disc_number = self.id3['discnumber'][0]
+            self.disc_number = self.sanitize_discnumber(self.disc_number)
+            logger.debug("Found disc number '%s' from ID3 tag in file '%s'" % (self.disc_number, self.filename))
+        except KeyError:
+            logger.warning("No disc number metadata found for %s" % self.filename)
 
 
 class SoundFileGeneric(SoundFile):
