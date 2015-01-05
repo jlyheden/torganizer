@@ -47,18 +47,15 @@ class SoundFile(object):
         self.parse_filename()
 
     def parse_filename(self):
-        """
-        TODO: refine logic
-
-        :return:
-        """
         try:
             leading_digits = re.search(r"^([0-9]+)", self.filename_wext).group()
             if len(leading_digits) == 3:
                 self.disc_number = leading_digits[:1]
+                logger.debug("Parsed disc number '%s' from file name '%s'" % (self.disc_number, self.filename))
                 self.track_number = leading_digits[1:]
             else:
                 self.track_number = leading_digits
+            logger.debug("Parsed track number '%s' from file name '%s'" % (self.track_number, self.filename))
         except AttributeError, ex:
             logger.error("Could not parse file name %s, hope it contains any metadata. Exception was" % self.filename,
                          str(ex))
@@ -68,17 +65,23 @@ class SoundFile(object):
             # assume "trackno - title"
             if occurrence == 1:
                 self.title_name = sanitize_string(self.filename_wext.split('-')[1], title=False)
+                logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name, self.filename))
 
             # assume "trackno - artist - title"
             elif occurrence == 2:
                 self.artist_name = sanitize_string(self.filename_wext.split('-')[1], title=True)
                 self.title_name = sanitize_string(self.filename_wext.split('-')[2], title=False)
+                logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name, self.filename))
+                logger.debug("Parsed artist name '%s' from file name '%s'" % (self.artist_name, self.filename))
 
             # assume "trackno - artist - album - title"
             elif occurrence == 3:
                 self.artist_name = sanitize_string(self.filename_wext.split('-')[1], title=True)
                 self.album_name = sanitize_string(self.filename_wext.split('-')[2], title=True)
                 self.title_name = sanitize_string(self.filename_wext.split('-')[3], title=False)
+                logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name, self.filename))
+                logger.debug("Parsed artist name '%s' from file name '%s'" % (self.artist_name, self.filename))
+                logger.debug("Parsed album name '%s' from file name '%s'" % (self.album_name, self.filename))
 
             # no match
             else:
@@ -89,10 +92,12 @@ class SoundFile(object):
                 if occurrence == 0:
                     self.title_name = sanitize_string(re.sub("^[0-9]+", "", self.filename_wext.split('.')[0]),
                                                       title=False)
+                    logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name, self.filename))
 
                 # assume "trackno. title"
                 elif occurrence == 1:
                     self.title_name = sanitize_string(self.filename_wext.split('.')[1], title=False)
+                    logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name, self.filename))
 
     @staticmethod
     def sanitize_tracknumber(n):
@@ -161,9 +166,10 @@ class SoundFile(object):
     def copy(self, dst):
         dst_full = unicode_squash(os.path.join(dst, self.artist_name, self.album_name))
         if not os.path.exists(dst_full):
-            logger.info("Destination directory '%s' does not exist. Creating it" % dst_full)
+            logger.debug("Destination directory '%s' does not exist. Creating it" % dst_full)
             os.makedirs(dst_full)
         shutil.copy(self.filename_path, dst_full)
+        logger.info("Copied file '%s' to destination '%s'" % (self.filename_path, dst_full))
 
 
 class SoundFileMP3(SoundFile):
@@ -211,14 +217,15 @@ class SoundFileMP3(SoundFile):
         if self.disc_number:
             self.id3['discnumber'] = self.disc_number
         self.id3.save()
+        logger.debug("Committed ID3 changes: %s" % str(self.id3))
         new_path = os.path.join(os.path.dirname(self.filename_path), str(self))
-        logger.debug("Renaming file '%s' to '%s'" % (self.filename_path, new_path))
         os.rename(self.filename_path, new_path)
+        logger.debug("Renamed file '%s' to '%s'" % (self.filename_path, new_path))
         self.filename_path = new_path
 
 
 class SoundFileGeneric(SoundFile):
     """
-    Dummy class inherited from SoundFile, use for just parsing filename for details
+    Dummy class inherited from SoundFile, use for just parsing filename and lastfm for details
     """
     pass

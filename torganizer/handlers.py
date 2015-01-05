@@ -5,14 +5,13 @@ import shutil
 import logging
 from torganizer.actions import action_factory
 from torganizer.files import soundfile_factory
-from torganizer.utils import sanitize_string
 
 logger = logging.getLogger(__name__)
 
 
 class BaseHandler(object):
     """
-    Inherit from the BaseType
+    Use this class for constructing actual media type handlers
     """
 
     # override in child class
@@ -48,17 +47,6 @@ class BaseHandler(object):
         logger.info("Purging tmp directory '%s'" % self.tmp_path_full)
         shutil.rmtree(self.tmp_path_full)
 
-    def full_path_to_dst(self):
-        pass
-
-    @staticmethod
-    def rename_file(src, dst):
-        if src == dst:
-            logger.debug("Not renaming file '%s' to '%s', destination is identical to source" % (src, dst))
-        else:
-            logger.debug("Renaming file '%s' to '%s'" % (src, dst))
-            os.rename(src, dst)
-
     def execute(self):
         self.analyze_files()
         self.copy_to_tmp()
@@ -69,23 +57,16 @@ class BaseHandler(object):
     def is_copied(self, f):
         return os.path.splitext(f)[1] not in self.file_types_ignore
 
+    def is_handled(self, f):
+        return os.path.splitext(f)[1].lower() in self.file_types
+
 
 class MusicHandler(BaseHandler):
 
     file_types = ['.mp3']
     file_types_ignore = ['.nfo', '.cue', '.log', '.m3u']
 
-    def is_handled(self, f):
-        return os.path.splitext(f)[1].lower() in self.file_types
-
     def analyze_files(self):
-        """
-        We probably need to handle each type of media differently
-        For example, music we want to retain sub folders for multi CD albums so that
-        this folder metadata is preserved.
-
-        :return:
-        """
         for walk in os.walk(self.src_path):
             walk_dir = walk[0]
             walk_dir_files = walk[2]
@@ -98,17 +79,10 @@ class MusicHandler(BaseHandler):
                                                                                                     subfolder))
 
     def post_process_tmp(self):
-        """
-        TODO: no support for directory trees (cd1/ cd2/) etc
-        Scans files for metadata for artist name and album name
-        Renames files based on name and metadata analytics
-
-        :return:
-        """
         for walk in os.walk(self.tmp_path_full):
             walk_dir = walk[0]
             walk_dir_files = walk[2]
-            subfolder = walk_dir.lstrip(self.tmp_path_full)
+            #subfolder = walk_dir.lstrip(self.tmp_path_full)
             for walk_file in walk_dir_files:
                 walk_file_path = os.path.join(walk_dir, walk_file)
                 if self.is_handled(walk_file):
