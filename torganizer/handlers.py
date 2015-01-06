@@ -18,6 +18,7 @@ class BaseHandler(object):
     file_types = []
     file_types_ignore = []
     archive_file_types = ['.zip', '.rar']
+    dir_ignore = ['.AppleDouble']
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -79,7 +80,7 @@ class MusicHandler(BaseHandler):
     file_types_ignore = ['.nfo', '.cue', '.log', '.m3u']
 
     def analyze_files(self):
-        for f in walk_directory(self.src_path):
+        for f in walk_directory(self.src_path, ignore_dirs=self.dir_ignore, ignore_dirs_case_insensitive=True):
             subfolder = os.path.dirname(f)[len(self.src_path):].lstrip(os.sep)
             if self.is_copied(f):
                 dst_path = os.path.join(self.tmp_path_full, subfolder)
@@ -102,7 +103,7 @@ class SeriesHandler(BaseHandler):
 
     file_types = ['.mkv', '.avi', '.wmv', '.divx', '.idx', '.sub', '.srt']
     file_types_ignore = ['.nfo', '.sfv']
-    dir_ignore = ['sample']
+    dir_ignore = ['sample', '.AppleDouble']
 
     def analyze_files(self):
         for f in walk_directory(self.src_path, ignore_dirs=self.dir_ignore, ignore_dirs_case_insensitive=True):
