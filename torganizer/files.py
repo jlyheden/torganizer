@@ -57,8 +57,8 @@ class SoundFile(object):
                 self.track_number = leading_digits
             logger.debug("Parsed track number '%s' from file name '%s'" % (self.track_number, self.filename))
         except AttributeError, ex:
-            logger.error("Could not parse file name %s, hope it contains any metadata. Exception was" % self.filename,
-                         str(ex))
+            logger.error("Could not parse file name %s, hope it contains any metadata. Exception was %s" % (
+                self.filename, str(ex)))
         else:
             occurrence = occurrence_in_string('-', self.filename_wext)
 
