@@ -64,21 +64,21 @@ class SoundFile(object):
 
             # assume "trackno - title"
             if occurrence == 1:
-                self.title_name = sanitize_string(self.filename_wext.split('-')[1], title=False)
+                self.title_name = sanitize_string(self.filename_wext.split('-')[1])
                 logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name, self.filename))
 
             # assume "trackno - artist - title"
             elif occurrence == 2:
                 self.artist_name = sanitize_string(self.filename_wext.split('-')[1], title=True)
-                self.title_name = sanitize_string(self.filename_wext.split('-')[2], title=False)
+                self.title_name = sanitize_string(self.filename_wext.split('-')[2])
                 logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name, self.filename))
                 logger.debug("Parsed artist name '%s' from file name '%s'" % (self.artist_name, self.filename))
 
             # assume "trackno - artist - album - title"
             elif occurrence == 3:
                 self.artist_name = sanitize_string(self.filename_wext.split('-')[1], title=True)
-                self.album_name = sanitize_string(self.filename_wext.split('-')[2], title=True)
-                self.title_name = sanitize_string(self.filename_wext.split('-')[3], title=False)
+                self.album_name = sanitize_string(self.filename_wext.split('-')[2])
+                self.title_name = sanitize_string(self.filename_wext.split('-')[3])
                 logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name, self.filename))
                 logger.debug("Parsed artist name '%s' from file name '%s'" % (self.artist_name, self.filename))
                 logger.debug("Parsed album name '%s' from file name '%s'" % (self.album_name, self.filename))
@@ -229,3 +229,48 @@ class SoundFileGeneric(SoundFile):
     Dummy class inherited from SoundFile, use for just parsing filename and lastfm for details
     """
     pass
+
+
+class SeriesFile(object):
+
+    def __init__(self, f):
+        self.full_file_path = f
+        self.filename = os.path.basename(f)
+        self.file_path = os.path.dirname(f)
+        self.file_ext = os.path.splitext(f)[1]
+        self.series_name = None
+        self.season = None
+        self.episode_number = None
+        self.episode_name = None
+        self.parse_filename()
+
+    def parse_filename(self):
+        re_search = re.search(r"^(.*)(s[0-9]{2})(e[0-9]{2})", self.filename, re.IGNORECASE)
+        self.series_name = sanitize_string(re_search.group(1), title=True, strip_dots=True)
+        self.season = int(re_search.group(2).lower().lstrip('s'))
+        self.episode_number = int(re_search.group(3).lower().lstrip('e'))
+
+    def season_string(self):
+        return "S%02d" % self.season
+
+    def episode_string(self):
+        return "E%02d" % self.episode_number
+
+    def persist(self):
+        new_path = os.path.join(os.path.dirname(self.full_file_path), str(self))
+        os.rename(self.full_file_path, new_path)
+        logger.debug("Renamed file '%s' to '%s'" % (self.full_file_path, new_path))
+        self.full_file_path = new_path
+        self.filename = str(self)
+
+    def copy(self, dst):
+        dst_full = unicode_squash(os.path.join(dst, self.series_name, "Season %s" % self.season))
+        if not os.path.exists(dst_full):
+            logger.debug("Destination directory '%s' does not exist. Creating it" % dst_full)
+            os.makedirs(dst_full)
+        shutil.copy(self.full_file_path, dst_full)
+        logger.info("Copied file '%s' to destination '%s'" % (self.full_file_path, dst_full))
+
+    def __str__(self):
+        return sanitize_string("%s %s%s%s" % (self.series_name, self.season_string(), self.episode_string(),
+                               self.file_ext))

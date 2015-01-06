@@ -19,9 +19,10 @@ def setup_logging(config):
 
 
 def setup(config, path):
-    from torganizer.handlers import MusicHandler
+    from torganizer.handlers import MusicHandler, SeriesHandler
     handlers = {
-        'MusicHandler': MusicHandler
+        'MusicHandler': MusicHandler,
+        'SeriesHandler': SeriesHandler
     }
     for handler in config['handlers'].values():
         if path.startswith(handler['scan_path']):

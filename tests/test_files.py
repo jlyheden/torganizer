@@ -4,7 +4,7 @@ __author__ = 'johan'
 import unittest
 import shutil
 import os
-from torganizer.files import SoundFileMP3, SoundFileGeneric
+from torganizer.files import SoundFileMP3, SoundFileGeneric, SeriesFile
 
 
 def testfile(f):
@@ -78,3 +78,13 @@ class TestTorganizerSoundFileMP3(unittest.TestCase):
         self.assertEqual('Artist Name', o.artist_name)
         self.assertEqual('Album Name', o.album_name)
         self.assertEqual('01 - 440Hz Sine Wave.mp3', str(o))
+
+
+class TestTorganizerSeriesFile(unittest.TestCase):
+
+    def test_parse_name(self):
+        o = SeriesFile('/path/Series.Name.S01E02.HDTV-BLABLA/series.name.s01e02.hdtv-blabla.avi')
+        self.assertEqual('Series Name', o.series_name)
+        self.assertEqual(1, o.season)
+        self.assertEqual(2, o.episode_number)
+        self.assertEqual("Series Name S01E02.avi", str(o))

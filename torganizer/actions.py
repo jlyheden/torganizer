@@ -52,7 +52,7 @@ class CopyAction(BaseAction):
 class DummyCopyAction(BaseAction):
 
     def do(self):
-        logger.debug("Dummy logger for file %s" % self.src)
+        logger.debug("Ignoring file %s" % self.src)
 
 
 class UnrarAction(BaseAction):
@@ -60,9 +60,11 @@ class UnrarAction(BaseAction):
     def __init__(self, src, dst):
         super(UnrarAction, self).__init__(src, dst)
         self.run_cmd('unrar', '--help')
+        logger.debug("Found unrar executable")
 
     def do(self):
-        self.run_cmd('unrar', '-x', self.src, self.dst)
+        logger.debug("Extracting file '%s' to '%s'" % (self.src, self.dst))
+        self.run_cmd('unrar', 'x', self.src, self.dst)
 
 
 class UnzipAction(BaseAction):
@@ -70,6 +72,8 @@ class UnzipAction(BaseAction):
     def __init__(self, src, dst):
         super(UnzipAction, self).__init__(src, dst)
         self.run_cmd('unzip', '-h')
+        logger.debug("Found unzip executable")
 
     def do(self):
+        logger.debug("Extracting file '%s' to '%s'" % (self.src, self.dst))
         self.run_cmd('unzip', self.src, '-d', self.dst)

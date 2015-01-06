@@ -5,6 +5,7 @@ from urllib import urlencode
 import urllib2
 import xml.etree.ElementTree as ET
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def unicode_squash(s):
     return str(rs)
 
 
-def sanitize_string(s, title=False):
+def sanitize_string(s, title=False, strip_dots=False):
     """
     Replace underscore with whitespace
     Optionally titles the string
@@ -46,8 +47,10 @@ def sanitize_string(s, title=False):
     :return: sanitized string
     :rtype: str
     """
-    rs = s.replace("_", " ").lstrip().rstrip()
-    rs = rs.replace("/", "-")
+    rs = s.replace("/", "-")
+    if strip_dots:
+        rs = rs.replace(".", " ")
+    rs = rs.replace("_", " ").lstrip().rstrip()
     if title:
         return rs.title()
     else:
@@ -86,3 +89,33 @@ def lastfm_apicall(api_key, **kwargs):
     request.add_header('Accept', 'application/xml')
     response = urllib2.urlopen(request)
     return ET.fromstring(response.read())
+
+
+def walk_directory(path, ignore_dirs=[], ignore_dirs_case_insensitive=True):
+    """
+    Walks directory structure and returns a list of fully qualified filenames
+    :param path: path to walk
+    :param ignore_dirs: list of dirs to exclude from walk
+    :param ignore_dirs_case_insensitive: if ignore should disregard casing differences
+    :type path: str
+    :type ignore_dirs: list
+    :type ignore_dirs_case_insensitive: bool
+    :return: list of files
+    :rtype: list
+    """
+    def dirname(dd):
+        if ignore_dirs_case_insensitive:
+            return dd.lower()
+        else:
+            return dd
+    rv = []
+    if ignore_dirs_case_insensitive:
+        ignore_dirs = [d.lower() for d in ignore_dirs]
+    for walk in os.walk(path, topdown=True):
+        walk[1][:] = [d for d in walk[1] if dirname(d) not in ignore_dirs]
+        walk_dir = walk[0]
+        walk_dir_files = walk[2]
+        for walk_file in walk_dir_files:
+            walk_file_path = os.path.join(walk_dir, walk_file)
+            rv.append(walk_file_path)
+    return rv
