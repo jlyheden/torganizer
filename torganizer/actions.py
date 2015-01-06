@@ -16,7 +16,7 @@ def action_factory(f):
     if ext == '.rar':
         if name.endswith('part1') or name.endswith('part01') or name.endswith('part001'):
             return UnrarAction
-        elif re.match(r"part[0-9]+$", ext):
+        if re.search(r"part[0-9]+$", name):
             return DummyCopyAction
         return UnrarAction
     elif re.match(r"\.r[0-9]{2}", ext):
