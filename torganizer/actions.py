@@ -11,8 +11,13 @@ PATH = os.environ['PATH']
 
 
 def action_factory(f):
-    ext = os.path.splitext(f)[1].lower()
+    name, ext = os.path.splitext(f)
+    ext = ext.lower()
     if ext == '.rar':
+        if name.endswith('part1') or name.endswith('part01') or name.endswith('part001'):
+            return UnrarAction
+        elif re.match(r"part[0-9]+$", ext):
+            return DummyCopyAction
         return UnrarAction
     elif re.match(r"\.r[0-9]{2}", ext):
         return DummyCopyAction
@@ -34,9 +39,7 @@ class BaseAction(object):
         logger.debug("Executing command: '%s'" % " ".join(p_list))
         p = subprocess.Popen(p_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output = p.communicate()
-        if p.returncode != 0:
-            raise Exception("Failed to execute command '%s' in path: %s. Output from command: %s" % (" ".join(p_list),
-                                                                                                     PATH, output[1]))
+        return p.returncode, output[0], output[1]
 
 
 class CopyAction(BaseAction):
@@ -59,21 +62,29 @@ class UnrarAction(BaseAction):
 
     def __init__(self, src, dst):
         super(UnrarAction, self).__init__(src, dst)
-        self.run_cmd('unrar', '--help')
+        returncode, stdout, stderr = self.run_cmd('unrar', '--help')
+        if returncode == 127:
+            raise Exception("Could not find unrar executable in path: %s" % PATH)
         logger.debug("Found unrar executable")
 
     def do(self):
         logger.debug("Extracting file '%s' to '%s'" % (self.src, self.dst))
-        self.run_cmd('unrar', 'x', self.src, self.dst)
+        returncode, stdout, stderr = self.run_cmd('unrar', 'x', self.src, self.dst)
+        if returncode != 0:
+            raise Exception("Failed to extract file %s. Output from unzip: %s" % (self.src, stderr))
 
 
 class UnzipAction(BaseAction):
 
     def __init__(self, src, dst):
         super(UnzipAction, self).__init__(src, dst)
-        self.run_cmd('unzip', '-h')
+        returncode, stdout, stderr = self.run_cmd('unzip')
+        if returncode == 127:
+            raise Exception("Could not find unzip executable in path: %s" % PATH)
         logger.debug("Found unzip executable")
 
     def do(self):
         logger.debug("Extracting file '%s' to '%s'" % (self.src, self.dst))
-        self.run_cmd('unzip', self.src, '-d', self.dst)
+        returncode, stdout, stderr = self.run_cmd('unzip', self.src, '-d', self.dst)
+        if returncode != 0:
+            raise Exception("Failed to extract file %s. Output from unzip: %s" % (self.src, stderr))
