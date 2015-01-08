@@ -19,7 +19,9 @@ def soundfile_factory(f):
     :rtype: SoundFile
     """
     formats = {
-        '.mp3': SoundFileMP3
+        '.mp3': SoundFileMP3,
+        '.flac': SoundFileMutagenGeneric,
+        '.ogg': SoundFileMutagenGeneric
     }
     try:
         ext = os.path.splitext(f)[1].lower()
@@ -218,6 +220,56 @@ class SoundFileMP3(SoundFile):
             self.id3['discnumber'] = self.disc_number
         self.id3.save()
         logger.debug("Committed ID3 changes: %s" % str(self.id3))
+        new_path = os.path.join(os.path.dirname(self.filename_path), str(self))
+        os.rename(self.filename_path, new_path)
+        logger.debug("Renamed file '%s' to '%s'" % (self.filename_path, new_path))
+        self.filename_path = new_path
+
+
+class SoundFileMutagenGeneric(SoundFile):
+
+    def __init__(self, filename):
+        super(SoundFileMutagenGeneric, self).__init__(filename=filename)
+
+        from mutagen import File
+        self.mutagen = File(self.filename_path)
+        try:
+            self.artist_name = self.mutagen['artist'][0]
+            logger.debug("Found artist name '%s' from metadata in file '%s'" % (self.artist_name, self.filename))
+        except KeyError:
+            logger.warning("No artist name metadata found for %s" % self.filename)
+        try:
+            self.album_name = self.mutagen['album'][0]
+            logger.debug("Found album name '%s' from metadata in file '%s'" % (self.album_name, self.filename))
+        except KeyError:
+            logger.warning("No album name metadata found for %s" % self.filename)
+        try:
+            self.title_name = self.mutagen['title'][0]
+            logger.debug("Found title name '%s' from metadata in file '%s'" % (self.title_name, self.filename))
+        except KeyError:
+            logger.warning("No title metadata found for %s" % self.filename)
+        try:
+            self.track_number = self.mutagen['tracknumber'][0]
+            self.track_number = self.sanitize_tracknumber(self.track_number)
+            logger.debug("Found track number '%s' from metadata in file '%s'" % (self.track_number, self.filename))
+        except KeyError:
+            logger.warning("No track number metadata found for %s" % self.filename)
+        try:
+            self.disc_number = self.mutagen['discnumber'][0]
+            self.disc_number = self.sanitize_discnumber(self.disc_number)
+            logger.debug("Found disc number '%s' from metadata in file '%s'" % (self.disc_number, self.filename))
+        except KeyError:
+            logger.warning("No disc number metadata found for %s" % self.filename)
+
+    def persist(self):
+        self.mutagen['artist'] = self.artist_name
+        self.mutagen['album'] = self.album_name
+        self.mutagen['title'] = self.title_name
+        self.mutagen['tracknumber'] = self.track_number
+        if self.disc_number:
+            self.mutagen['discnumber'] = self.disc_number
+        self.mutagen.save()
+        logger.debug("Committed metadata changes: %s" % str(self.mutagen))
         new_path = os.path.join(os.path.dirname(self.filename_path), str(self))
         os.rename(self.filename_path, new_path)
         logger.debug("Renamed file '%s' to '%s'" % (self.filename_path, new_path))
