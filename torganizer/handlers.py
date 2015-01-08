@@ -76,7 +76,7 @@ class BaseHandler(object):
 
 class MusicHandler(BaseHandler):
 
-    file_types = ['.mp3']
+    file_types = ['.mp3', '.ogg', '.flac', '.mp4', '.m4a']
     file_types_ignore = ['.nfo', '.cue', '.log', '.m3u']
 
     def analyze_files(self):
