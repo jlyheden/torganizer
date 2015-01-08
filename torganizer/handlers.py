@@ -92,9 +92,14 @@ class MusicHandler(BaseHandler):
             if self.is_handled(f):
                 SoundFileFactoryClass = soundfile_factory(f)
                 soundfile = SoundFileFactoryClass(f)
-                if self.lastfm_apikey:
+                try:
+                    self.lastfm_apikey
+                except AttributeError:
+                    logger.info("No lastfm api key set, won't query lastfm for metadata")
+                else:
                     soundfile.lastfm_apikey = self.lastfm_apikey
                     soundfile.parse_lastfm_data()
+                soundfile.sanitize_metadata()
                 soundfile.persist()
                 self.files_process[f] = soundfile
 

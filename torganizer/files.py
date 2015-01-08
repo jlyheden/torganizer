@@ -47,6 +47,7 @@ class SoundFile(object):
         self.disc_number = ''
         self.lastfm_apikey = lastfm_apikey
         self.parse_filename()
+        self.parse_filename_path()
 
     def parse_filename(self):
         try:
@@ -100,6 +101,13 @@ class SoundFile(object):
                 elif occurrence == 1:
                     self.title_name = sanitize_string(self.filename_wext.split('.')[1], title=False)
                     logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name, self.filename))
+
+    def parse_filename_path(self):
+        parent = os.path.basename(os.path.dirname(self.filename_path))
+        r = re.search(r"cd([0-9]+)", parent, re.IGNORECASE)
+        if r:
+            logger.debug("Parent folder had cdNUM in name, using it for disc metadata")
+            self.disc_number = r.group(1)
 
     @staticmethod
     def sanitize_tracknumber(n):
@@ -158,6 +166,11 @@ class SoundFile(object):
         # This should be configurable
         return sanitize_string("%s%s - %s%s" % (self.disc_number, self.sanitize_tracknumber(self.track_number),
                                                 unicode_squash(self.title_name), self.extension))
+
+    def sanitize_metadata(self):
+        self.artist_name = sanitize_string(self.artist_name, title=True)
+        self.album_name = sanitize_string(re.sub(r"(?i)cd[0-9]+", "", self.album_name))
+        self.title_name = sanitize_string(self.title_name)
 
     def persist(self):
         """
