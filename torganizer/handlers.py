@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 __author__ = 'johan'
 
 import os
@@ -78,6 +79,7 @@ class MusicHandler(BaseHandler):
 
     file_types = ['.mp3', '.ogg', '.flac', '.mp4', '.m4a']
     file_types_ignore = ['.nfo', '.cue', '.log', '.m3u']
+    dir_ignore = ['.AppleDouble']
 
     def analyze_files(self):
         for f in walk_directory(self.src_path, ignore_dirs=self.dir_ignore, ignore_dirs_case_insensitive=True):
