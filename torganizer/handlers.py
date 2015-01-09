@@ -23,7 +23,7 @@ class BaseHandler(object):
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
-            setattr(self, k, v)
+            setattr(self, k, unicode(v))
         self.dst_path_full = None
         self.tmp_path_full = os.path.join(self.tmp_path, os.path.basename(self.src_path))
         self.files_action = {}
