@@ -54,11 +54,11 @@ class BaseHandler(object):
             if not os.path.exists(unsort_dir):
                 os.makedirs(unsort_dir)
             shutil.copy(f, unsort_dir)
-            logger.warning("Copied failed file '%s' to unsorted directory '%s'" % (f.decode('utf-8'),
-                                                                                   unsort_dir.decode('utf-8')))
+            logger.warning("Copied failed file '%s' to unsorted directory '%s'" % (f,
+                                                                                   unsort_dir))
 
     def cleanup(self):
-        logger.info("Purging tmp directory '%s'" % self.tmp_path_full.decode('utf-8'))
+        logger.info("Purging tmp directory '%s'" % self.tmp_path_full)
         shutil.rmtree(self.tmp_path_full)
 
     def execute(self):
@@ -123,7 +123,7 @@ class SeriesHandler(BaseHandler):
         # walk tmp path, could be more archives to extract
         for f in walk_directory(self.tmp_path_full):
             if os.path.splitext(f)[1] in self.archive_file_types:
-                logger.debug("Found archive '%s' in tmp folder" % f.decode('utf-8'))
+                logger.debug("Found archive '%s' in tmp folder" % f)
                 Action = action_factory(f)
                 a = Action(src=f, dst=self.tmp_path_full)
                 a.do()
@@ -135,7 +135,7 @@ class SeriesHandler(BaseHandler):
                     seriesfile = SeriesFile(f)
                 except Exception, ex:
                     logger.error("Failed to parse file '%s' for metadata. Exception was: %s" %
-                                 (f.decode('utf-8'), str(ex).decode('utf-8')))
+                                 (f, str(ex)))
                     self.failed_files.append(f)
                 else:
                     seriesfile.persist()

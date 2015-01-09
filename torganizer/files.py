@@ -30,7 +30,7 @@ def soundfile_factory(f):
         ext = os.path.splitext(f)[1].lower()
         return formats[ext]
     except KeyError:
-        logger.warning("No factory for file type '%s', falling back on generic" % f.decode('utf-8'))
+        logger.warning("No factory for file type '%s', falling back on generic" % f)
         return SoundFileGeneric
 
 
@@ -57,45 +57,45 @@ class SoundFile(object):
             leading_digits = re.search(r"^([0-9]+)", self.filename_wext).group()
             if len(leading_digits) == 3:
                 self.disc_number = leading_digits[:1]
-                logger.debug("Parsed disc number '%s' from file name '%s'" % (self.disc_number.decode('utf-8'),
-                                                                              self.filename.decode('utf-8')))
+                logger.debug("Parsed disc number '%s' from file name '%s'" % (self.disc_number,
+                                                                              self.filename))
                 self.track_number = leading_digits[1:]
             else:
                 self.track_number = leading_digits
-            logger.debug("Parsed track number '%s' from file name '%s'" % (self.track_number.decode('utf-8'),
-                                                                           self.filename.decode('utf-8')))
+            logger.debug("Parsed track number '%s' from file name '%s'" % (self.track_number,
+                                                                           self.filename))
         except AttributeError, ex:
             logger.error("Could not parse file name '%s', hope it contains any metadata. Exception was %s" % (
-                self.filename.decode('utf-8'), str(ex)))
+                self.filename, str(ex)))
         else:
             occurrence = occurrence_in_string('-', self.filename_wext)
 
             # assume "trackno - title"
             if occurrence == 1:
                 self.title_name = sanitize_string(self.filename_wext.split('-')[1])
-                logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name.decode('utf-8'),
-                                                                             self.filename.decode('utf-8')))
+                logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name,
+                                                                             self.filename))
 
             # assume "trackno - artist - title"
             elif occurrence == 2:
                 self.artist_name = sanitize_string(self.filename_wext.split('-')[1], title=True)
                 self.title_name = sanitize_string(self.filename_wext.split('-')[2])
-                logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name.decode('utf-8'),
-                                                                             self.filename.decode('utf-8')))
-                logger.debug("Parsed artist name '%s' from file name '%s'" % (self.artist_name.decode('utf-8'),
-                                                                              self.filename.decode('utf-8')))
+                logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name,
+                                                                             self.filename))
+                logger.debug("Parsed artist name '%s' from file name '%s'" % (self.artist_name,
+                                                                              self.filename))
 
             # assume "trackno - artist - album - title"
             elif occurrence == 3:
                 self.artist_name = sanitize_string(self.filename_wext.split('-')[1], title=True)
                 self.album_name = sanitize_string(self.filename_wext.split('-')[2])
                 self.title_name = sanitize_string(self.filename_wext.split('-')[3])
-                logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name.decode('utf-8'),
-                                                                             self.filename.decode('utf-8')))
-                logger.debug("Parsed artist name '%s' from file name '%s'" % (self.artist_name.decode('utf-8'),
-                                                                              self.filename.decode('utf-8')))
-                logger.debug("Parsed album name '%s' from file name '%s'" % (self.album_name.decode('utf-8'),
-                                                                             self.filename.decode('utf-8')))
+                logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name,
+                                                                             self.filename))
+                logger.debug("Parsed artist name '%s' from file name '%s'" % (self.artist_name,
+                                                                              self.filename))
+                logger.debug("Parsed album name '%s' from file name '%s'" % (self.album_name,
+                                                                             self.filename))
 
             # no match
             else:
@@ -106,14 +106,14 @@ class SoundFile(object):
                 if occurrence == 0:
                     self.title_name = sanitize_string(re.sub("^[0-9]+", "", self.filename_wext.split('.')[0]),
                                                       title=False)
-                    logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name.decode('utf-8'),
-                                                                                 self.filename.decode('utf-8')))
+                    logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name,
+                                                                                 self.filename))
 
                 # assume "trackno. title"
                 elif occurrence == 1:
                     self.title_name = sanitize_string(self.filename_wext.split('.')[1], title=False)
-                    logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name.decode('utf-8'),
-                                                                                 self.filename.decode('utf-8')))
+                    logger.debug("Parsed title name '%s' from file name '%s'" % (self.title_name,
+                                                                                 self.filename))
 
     def parse_filename_path(self):
         parent = os.path.basename(os.path.dirname(self.filename_path))
@@ -144,7 +144,7 @@ class SoundFile(object):
         except AttributeError:
             logger.warning("Could not find 'name' tag from LastFM")
         else:
-            logger.debug("Found title data '%s' from LastFM" % title.decode('utf-8'))
+            logger.debug("Found title data '%s' from LastFM" % title)
             self.title_name = title
 
         try:
@@ -157,7 +157,7 @@ class SoundFile(object):
         except AttributeError:
             logger.warning("Could not find 'position' attribute from LastFM")
         else:
-            logger.debug("Found track data '%s' from LastFM" % track_number.decode('utf-8'))
+            logger.debug("Found track data '%s' from LastFM" % track_number)
             self.track_number = track_number
 
         try:
@@ -165,7 +165,7 @@ class SoundFile(object):
         except AttributeError:
             logger.warning("Could not find 'album'/'title' tag from LastFM")
         else:
-            logger.debug("Found album data '%s' from LastFM" % album.decode('utf-8'))
+            logger.debug("Found album data '%s' from LastFM" % album)
             self.album_name = album
 
     def __str__(self):
@@ -194,11 +194,11 @@ class SoundFile(object):
     def copy(self, dst):
         dst_full = unicode_squash(os.path.join(dst, self.artist_name, self.album_name))
         if not os.path.exists(dst_full):
-            logger.debug("Destination directory '%s' does not exist. Creating it" % dst_full.decode('utf-8'))
+            logger.debug("Destination directory '%s' does not exist. Creating it" % dst_full)
             os.makedirs(dst_full)
         shutil.copy(self.filename_path, dst_full)
-        logger.info("Copied file '%s' to destination '%s'" % (self.filename_path.decode('utf-8'),
-                                                              dst_full.decode('utf-8')))
+        logger.info("Copied file '%s' to destination '%s'" % (self.filename_path,
+                                                              dst_full))
 
 
 class SoundFileMP3(SoundFile):
@@ -212,36 +212,36 @@ class SoundFileMP3(SoundFile):
         self.id3 = EasyID3(self.filename_path)
         try:
             self.artist_name = self.id3['artist'][0]
-            logger.debug("Found artist name '%s' from ID3 tag in file '%s'" % (self.artist_name.decode('utf-8'),
-                                                                               self.filename.decode('utf-8')))
+            logger.debug("Found artist name '%s' from ID3 tag in file '%s'" % (self.artist_name,
+                                                                               self.filename))
         except KeyError:
-            logger.warning("No artist name metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No artist name metadata found for '%s'" % self.filename)
         try:
             self.album_name = self.id3['album'][0]
-            logger.debug("Found album name '%s' from ID3 tag in file '%s'" % (self.album_name.decode('utf-8'),
-                                                                              self.filename.decode('utf-8')))
+            logger.debug("Found album name '%s' from ID3 tag in file '%s'" % (self.album_name,
+                                                                              self.filename))
         except KeyError:
-            logger.warning("No album name metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No album name metadata found for '%s'" % self.filename)
         try:
             self.title_name = self.id3['title'][0]
-            logger.debug("Found title name '%s' from ID3 tag in file '%s'" % (self.title_name.decode('utf-8'),
-                                                                              self.filename.decode('utf-8')))
+            logger.debug("Found title name '%s' from ID3 tag in file '%s'" % (self.title_name,
+                                                                              self.filename))
         except KeyError:
-            logger.warning("No title metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No title metadata found for '%s'" % self.filename)
         try:
             self.track_number = self.id3['tracknumber'][0]
             self.track_number = self.sanitize_tracknumber(self.track_number)
-            logger.debug("Found track number '%s' from ID3 tag in file '%s'" % (self.track_number.decode('utf-8'),
-                                                                                self.filename.decode('utf-8')))
+            logger.debug("Found track number '%s' from ID3 tag in file '%s'" % (self.track_number,
+                                                                                self.filename))
         except KeyError:
-            logger.warning("No track number metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No track number metadata found for '%s'" % self.filename)
         try:
             self.disc_number = self.id3['discnumber'][0]
             self.disc_number = self.sanitize_discnumber(self.disc_number)
-            logger.debug("Found disc number '%s' from ID3 tag in file '%s'" % (self.disc_number.decode('utf-8'),
-                                                                               self.filename.decode('utf-8')))
+            logger.debug("Found disc number '%s' from ID3 tag in file '%s'" % (self.disc_number,
+                                                                               self.filename))
         except KeyError:
-            logger.warning("No disc number metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No disc number metadata found for '%s'" % self.filename)
 
     def persist(self):
         self.id3['artist'] = self.artist_name
@@ -254,7 +254,7 @@ class SoundFileMP3(SoundFile):
         logger.debug("Committed ID3 changes: %s" % str(self.id3))
         new_path = os.path.join(os.path.dirname(self.filename_path), str(self))
         os.rename(self.filename_path, new_path)
-        logger.debug("Renamed file '%s' to '%s'" % (self.filename_path.decode('utf-8'), new_path.decode('utf-8')))
+        logger.debug("Renamed file '%s' to '%s'" % (self.filename_path, new_path))
         self.filename_path = new_path
 
 
@@ -267,36 +267,36 @@ class SoundFileMutagenGeneric(SoundFile):
         self.mutagen = File(self.filename_path)
         try:
             self.artist_name = self.mutagen['artist'][0]
-            logger.debug("Found artist name '%s' from metadata in file '%s'" % (self.artist_name.decode('utf-8'),
-                                                                                self.filename.decode('utf-8')))
+            logger.debug("Found artist name '%s' from metadata in file '%s'" % (self.artist_name,
+                                                                                self.filename))
         except KeyError:
-            logger.warning("No artist name metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No artist name metadata found for '%s'" % self.filename)
         try:
             self.album_name = self.mutagen['album'][0]
-            logger.debug("Found album name '%s' from metadata in file '%s'" % (self.album_name.decode('utf-8'),
-                                                                               self.filename.decode('utf-8')))
+            logger.debug("Found album name '%s' from metadata in file '%s'" % (self.album_name,
+                                                                               self.filename))
         except KeyError:
-            logger.warning("No album name metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No album name metadata found for '%s'" % self.filename)
         try:
             self.title_name = self.mutagen['title'][0]
-            logger.debug("Found title name '%s' from metadata in file '%s'" % (self.title_name.decode('utf-8'),
-                                                                               self.filename.decode('utf-8')))
+            logger.debug("Found title name '%s' from metadata in file '%s'" % (self.title_name,
+                                                                               self.filename))
         except KeyError:
-            logger.warning("No title metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No title metadata found for '%s'" % self.filename)
         try:
             self.track_number = self.mutagen['tracknumber'][0]
             self.track_number = self.sanitize_tracknumber(self.track_number)
-            logger.debug("Found track number '%s' from metadata in file '%s'" % (self.track_number.decode('utf-8'),
-                                                                                 self.filename.decode('utf-8')))
+            logger.debug("Found track number '%s' from metadata in file '%s'" % (self.track_number,
+                                                                                 self.filename))
         except KeyError:
-            logger.warning("No track number metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No track number metadata found for '%s'" % self.filename)
         try:
             self.disc_number = self.mutagen['discnumber'][0]
             self.disc_number = self.sanitize_discnumber(self.disc_number)
-            logger.debug("Found disc number '%s' from metadata in file '%s'" % (self.disc_number.decode('utf-8'),
-                                                                                self.filename.decode('utf-8')))
+            logger.debug("Found disc number '%s' from metadata in file '%s'" % (self.disc_number,
+                                                                                self.filename))
         except KeyError:
-            logger.warning("No disc number metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No disc number metadata found for '%s'" % self.filename)
 
     def persist(self):
         self.mutagen['artist'] = self.artist_name
@@ -309,7 +309,7 @@ class SoundFileMutagenGeneric(SoundFile):
         logger.debug("Committed metadata changes: %s" % str(self.mutagen))
         new_path = os.path.join(os.path.dirname(self.filename_path), str(self))
         os.rename(self.filename_path, new_path)
-        logger.debug("Renamed file '%s' to '%s'" % (self.filename_path.decode('utf-8'), new_path.decode('utf-8')))
+        logger.debug("Renamed file '%s' to '%s'" % (self.filename_path, new_path))
         self.filename_path = new_path
 
 
@@ -322,38 +322,38 @@ class SoundFileMP4(SoundFile):
         self.mutagen = File(self.filename_path)
         try:
             self.artist_name = self.mutagen['\xa9ART'][0]
-            logger.debug("Found artist name '%s' from metadata in file '%s'" % (self.artist_name.decode('utf-8'),
-                                                                                self.filename.decode('utf-8')))
+            logger.debug("Found artist name '%s' from metadata in file '%s'" % (self.artist_name,
+                                                                                self.filename))
         except KeyError:
-            logger.warning("No artist name metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No artist name metadata found for '%s'" % self.filename)
         try:
             self.album_name = self.mutagen['\xa9alb'][0]
-            logger.debug("Found album name '%s' from metadata in file '%s'" % (self.album_name.decode('utf-8'),
-                                                                               self.filename.decode('utf-8')))
+            logger.debug("Found album name '%s' from metadata in file '%s'" % (self.album_name,
+                                                                               self.filename))
         except KeyError:
-            logger.warning("No album name metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No album name metadata found for '%s'" % self.filename)
         try:
             self.title_name = self.mutagen['\xa9nam'][0]
-            logger.debug("Found title name '%s' from metadata in file '%s'" % (self.title_name.decode('utf-8'),
-                                                                               self.filename.decode('utf-8')))
+            logger.debug("Found title name '%s' from metadata in file '%s'" % (self.title_name,
+                                                                               self.filename))
         except KeyError:
-            logger.warning("No title metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No title metadata found for '%s'" % self.filename)
         try:
             self.track_number_full = self.mutagen['trkn']
             self.track_number = self.track_number_full[0][0]
             self.track_number = self.sanitize_tracknumber(self.track_number)
-            logger.debug("Found track number '%s' from metadata in file '%s'" % (self.track_number.decode('utf-8'),
-                                                                                 self.filename.decode('utf-8')))
+            logger.debug("Found track number '%s' from metadata in file '%s'" % (self.track_number,
+                                                                                 self.filename))
         except KeyError:
-            logger.warning("No track number metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No track number metadata found for '%s'" % self.filename)
         try:
             self.disc_number_full = self.mutagen['disk']
             self.disc_number = self.disc_number_full[0][0]
             self.disc_number = self.sanitize_discnumber(self.disc_number)
-            logger.debug("Found disc number '%s' from metadata in file '%s'" % (self.disc_number.decode('utf-8'),
-                                                                                self.filename.decode('utf-8')))
+            logger.debug("Found disc number '%s' from metadata in file '%s'" % (self.disc_number,
+                                                                                self.filename))
         except KeyError:
-            logger.warning("No disc number metadata found for '%s'" % self.filename.decode('utf-8'))
+            logger.warning("No disc number metadata found for '%s'" % self.filename)
 
     def persist(self):
         self.mutagen['\xa9ART'] = self.artist_name
@@ -366,7 +366,7 @@ class SoundFileMP4(SoundFile):
         logger.debug("Committed metadata changes: %s" % str(self.mutagen))
         new_path = os.path.join(os.path.dirname(self.filename_path), str(self))
         os.rename(self.filename_path, new_path)
-        logger.debug("Renamed file '%s' to '%s'" % (self.filename_path.decode('utf-8'), new_path.decode('utf-8')))
+        logger.debug("Renamed file '%s' to '%s'" % (self.filename_path, new_path))
         self.filename_path = new_path
 
 
@@ -405,18 +405,18 @@ class SeriesFile(object):
     def persist(self):
         new_path = os.path.join(os.path.dirname(self.full_file_path), str(self))
         os.rename(self.full_file_path, new_path)
-        logger.debug("Renamed file '%s' to '%s'" % (self.full_file_path.decode('utf-8'), new_path.decode('utf-8')))
+        logger.debug("Renamed file '%s' to '%s'" % (self.full_file_path, new_path))
         self.full_file_path = new_path
         self.filename = str(self)
 
     def copy(self, dst):
         dst_full = unicode_squash(os.path.join(dst, self.series_name, "Season %s" % self.season))
         if not os.path.exists(dst_full):
-            logger.debug("Destination directory '%s' does not exist. Creating it" % dst_full.decode('utf-8'))
+            logger.debug("Destination directory '%s' does not exist. Creating it" % dst_full)
             os.makedirs(dst_full)
         shutil.copy(self.full_file_path, dst_full)
-        logger.info("Copied file '%s' to destination '%s'" % (self.full_file_path.decode('utf-8'),
-                                                              dst_full.decode('utf-8')))
+        logger.info("Copied file '%s' to destination '%s'" % (self.full_file_path,
+                                                              dst_full))
 
     def __str__(self):
         return sanitize_string("%s %s%s%s" % (self.series_name, self.season_string(), self.episode_string(),
