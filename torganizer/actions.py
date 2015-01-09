@@ -37,7 +37,7 @@ class BaseAction(object):
     @staticmethod
     def run_cmd(cmd, *args):
         p_list = [cmd] + list(args)
-        logger.debug("Executing command: '%s'" % " ".join(p_list))
+        logger.debug("Executing command: '%s'" % " ".join(p_list).decode('utf-8'))
         p = subprocess.Popen(p_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output = p.communicate()
         return p.returncode, output[0], output[1]
@@ -46,9 +46,9 @@ class BaseAction(object):
 class CopyAction(BaseAction):
 
     def do(self):
-        logger.debug("Copying file %s to %s" % (self.src, self.dst))
+        logger.debug("Copying file %s to %s" % (self.src.decode('utf-8'), self.dst.decode('utf-8')))
         if not os.path.exists(self.dst):
-            logger.info("Destination path %s does not exist. Creating it" % self.dst)
+            logger.info("Destination path %s does not exist. Creating it" % self.dst.decode('utf-8'))
             os.makedirs(self.dst)
         shutil.copy(self.src, self.dst)
 
@@ -56,7 +56,7 @@ class CopyAction(BaseAction):
 class DummyCopyAction(BaseAction):
 
     def do(self):
-        logger.debug("Ignoring file %s" % self.src)
+        logger.debug("Ignoring file %s" % self.src.decode('utf-8'))
 
 
 class UnrarAction(BaseAction):
@@ -69,8 +69,8 @@ class UnrarAction(BaseAction):
         logger.debug("Found unrar executable")
 
     def do(self):
-        logger.debug("Extracting file '%s' to '%s'" % (self.src, self.dst))
-        returncode, stdout, stderr = self.run_cmd('unrar', 'x', self.src, self.dst)
+        logger.debug("Extracting file '%s' to '%s'" % (self.src.decode('utf-8'), self.dst.decode('utf-8')))
+        returncode, stdout, stderr = self.run_cmd('unrar', 'x', self.src.decode('utf-8'), self.dst.decode('utf-8'))
         if returncode != 0:
             raise Exception("Failed to extract file %s. Output from unzip: %s" % (self.src, stderr))
 
@@ -85,7 +85,7 @@ class UnzipAction(BaseAction):
         logger.debug("Found unzip executable")
 
     def do(self):
-        logger.debug("Extracting file '%s' to '%s'" % (self.src, self.dst))
+        logger.debug("Extracting file '%s' to '%s'" % (self.src.decode('utf-8'), self.dst.decode('utf-8')))
         returncode, stdout, stderr = self.run_cmd('unzip', self.src, '-d', self.dst)
         if returncode != 0:
             raise Exception("Failed to extract file %s. Output from unzip: %s" % (self.src, stderr))
