@@ -12,6 +12,7 @@ setup(
     packages=['torganizer', 'tests'],
     test_suite="tests",
     install_requires=['mutagen', 'pyyaml'],
+    scripts=['torganizer_cmd.py'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
