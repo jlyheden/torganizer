@@ -4,6 +4,8 @@ __author__ = 'johan'
 import os
 import shutil
 import logging
+import threading
+import Queue
 from torganizer.actions import action_factory
 from torganizer.files import soundfile_factory, SeriesFile
 from torganizer.utils import walk_directory
@@ -20,6 +22,7 @@ class BaseHandler(object):
     file_types_ignore = []
     archive_file_types = ['.zip', '.rar']
     dir_ignore = ['.AppleDouble']
+    num_worker_threads = 5
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -38,11 +41,23 @@ class BaseHandler(object):
             value.copy(self.dst_path)
 
     def copy_to_tmp(self):
+        def worker():
+            while True:
+                action = q.get()
+                action.do()
+                q.task_done()
         if os.path.exists(self.tmp_path_full):
             shutil.rmtree(self.tmp_path_full)
         os.makedirs(self.tmp_path_full)
+        q = Queue.Queue()
+        for i in range(self.num_worker_threads):
+            t = threading.Thread(target=worker)
+            t.daemon = True
+            t.start()
         for action in self.files_action.values():
-            action.do()
+            #action.do()
+            q.put(action)
+        q.join()
 
     def post_process_tmp(self):
         pass

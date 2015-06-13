@@ -6,6 +6,7 @@ import os
 import shutil
 import logging
 import subprocess
+import errno
 
 logger = logging.getLogger(__name__)
 PATH = os.environ['PATH']
@@ -47,9 +48,11 @@ class CopyAction(BaseAction):
 
     def do(self):
         logger.debug("Copying file %s to %s" % (self.src, self.dst))
-        if not os.path.exists(self.dst):
-            logger.info("Destination path %s does not exist. Creating it" % self.dst)
+        try:
             os.makedirs(self.dst)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
         shutil.copy(self.src, self.dst)
 
 
